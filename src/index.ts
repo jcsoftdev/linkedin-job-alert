@@ -48,7 +48,7 @@ const authService = new AuthService(userRepository, jwtSecret);
 const filterManagement = new FilterManagement(userRepository);
 
 // Routes
-app.get('/', (c) => c.text('LinkedIn Job Collector is running!'));
+app.get('/', (c) => c.redirect('/dashboard'));
 
 app.get('/dashboard', async (c) => {
   return c.html(await Bun.file('src/dashboard.html').text());
