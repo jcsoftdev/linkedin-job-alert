@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Alert Dashboard</title>
+    <style>
+        :root {
+            --primary: #3B82F6;
+            --background: #F9FAFB;
+            --surface: #FFFFFF;
+            --text-primary: #111827;
+            --text-secondary: #6B7280;
+            --success: #10B981;
+            --border: #E5E7EB;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            --radius-lg: 16px;
+            --radius-md: 12px;
+            --radius-sm: 8px;
+            --header-height: 72px;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: "Inter", system-ui, -apple-system, sans-serif;
+            background: var(--background);
+            color: var(--text-primary);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        h1, h2, h3 { margin: 0 0 16px; color: var(--text-primary); }
+        h1 { font-size: 18px; font-weight: 600; }
+        h2 { font-size: 18px; font-weight: 600; }
+        h3 { font-size: 18px; font-weight: 600; }
+
+        input, button {
+            padding: 12px 16px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border);
+            width: 100%;
+            font-size: 14px;
+            font-family: inherit;
+            background: var(--surface);
+        }
+
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: transform 0.15s, background 0.2s;
+            border-radius: var(--radius-sm);
+        }
+        button:hover { background: #2563eb; }
+        button:active { transform: translateY(1px); }
+        button.secondary { background: #e5e7eb; color: #111827; }
+
+        .hidden { display: none; }
+        .error { color: #dc2626; margin: 8px 0; font-size: 14px; }
+
+        .auth-card {
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            padding: 32px;
+            box-shadow: var(--shadow);
+            max-width: 420px;
+            margin: 64px auto 0;
+        }
+
+        .auth-toggle {
+            text-align: center;
+            margin-top: 12px;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .dashboard-header {
+            position: sticky;
+            top: 0;
+            z-index: 30;
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            padding: 16px 20px;
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            min-height: var(--header-height);
+        }
+
+        .dashboard-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .profile {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: #F3F4F6;
+            color: var(--text-primary);
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .profile-avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 999px;
+            background: #DBEAFE;
+            color: var(--primary);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .profile-logout {
+            background: transparent;
+            color: #ef4444;
+            border: none;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 6px 8px;
+            width: auto;
+        }
+        .profile-logout:hover { background: rgba(239, 68, 68, 0.1); }
+
+        .app {
+            display: flex;
+            flex-direction: column;
+            gap: 32px;
+        }
+
+        .dashboard-header + .app {
+            margin-top: 16px;
+        }
+
+        .sidebar {
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            box-shadow: var(--shadow);
+        }
+
+        .main {
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            box-shadow: var(--shadow);
+        }
+
+        .sidebar-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .edit-toggle {
+            background: #F3F4F6;
+            color: #4B5563;
+            font-weight: 600;
+            padding: 8px 12px;
+            border-radius: 999px;
+            width: auto;
+            font-size: 12px;
+        }
+
+        .filters-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .sidebar {
+            transition: transform 0.2s ease, opacity 0.2s ease;
+        }
+
+        .sidebar-hidden {
+            transform: translateY(-16px);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .filter-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            border-radius: 999px;
+            background: #F3F4F6;
+            padding: 8px 12px;
+            font-size: 12px;
+            font-weight: 500;
+            color: #4B5563;
+            cursor: pointer;
+            transition: background 0.2s, color 0.2s;
+            white-space: nowrap;
+        }
+
+        .filter-chip.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .filter-chip .chip-delete {
+            display: none;
+            background: transparent;
+            border: none;
+            color: inherit;
+            cursor: pointer;
+            font-size: 14px;
+            padding: 0;
+            width: auto;
+        }
+
+        .filters-list.edit-mode .chip-delete { display: inline; }
+
+        .add-filter-btn {
+            margin-top: 16px;
+            background: transparent;
+            border: 1px dashed var(--primary);
+            color: var(--primary);
+            font-weight: 600;
+            border-radius: var(--radius-sm);
+        }
+
+        #create-filter-form {
+            margin-top: 16px;
+            background: var(--background);
+            padding: 20px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border);
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 12px;
+        }
+        .primary-action { flex: 2; }
+        .secondary-action { flex: 1; }
+
+        .feed-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        .feed-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .run-filter-btn {
+            width: auto;
+            padding: 8px 12px;
+            font-size: 12px;
+            border-radius: var(--radius-sm);
+            background: transparent;
+            color: var(--success);
+            border: 1px solid var(--border);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 600;
+        }
+        .run-filter-btn:hover { background: rgba(16, 185, 129, 0.08); }
+        .run-filter-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .run-filter-btn .run-icon { color: var(--success); font-size: 12px; }
+        .run-filter-btn.is-running {
+            border-color: var(--success);
+            animation: pulse 1.4s ease-in-out infinite;
+        }
+        .run-filter-btn.is-running::after {
+            content: "";
+            width: 12px;
+            height: 12px;
+            border-radius: 999px;
+            border: 2px solid var(--success);
+            border-top-color: transparent;
+            display: inline-block;
+            animation: spin 0.8s linear infinite;
+        }
+
+        .connection-status {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+        .connection-status.connected { color: var(--success); }
+        .connection-status.disconnected { color: #ef4444; }
+        .connection-status.running { 
+            color: var(--success);
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .connection-status.running::before {
+            content: "";
+            width: 8px;
+            height: 8px;
+            background: var(--success);
+            border-radius: 50%;
+            display: inline-block;
+            animation: pulse-small 1s ease-in-out infinite;
+        }
+
+        @keyframes pulse-small {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.5); opacity: 0.5; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .feed-title-suffix {
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        .feed-container {
+            background: var(--background);
+            border-radius: var(--radius-md);
+            padding: 20px;
+            border: none;
+            overflow-y: auto;
+        }
+
+        .job-card {
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            box-shadow: var(--shadow);
+            margin-bottom: 16px;
+        }
+
+        .job-card.new-item {
+            border: 2px solid var(--primary);
+            background: #eff6ff;
+        }
+
+        .job-header {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .job-company { font-size: 18px; font-weight: 600; color: var(--text-primary); }
+        .job-title-row { font-size: 16px; font-weight: 700; color: var(--text-primary); display: flex; flex-wrap: wrap; gap: 8px; }
+        .main-stack-badge {
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 999px;
+            background: #DBEAFE;
+            color: var(--primary);
+            font-weight: 500;
+        }
+
+        .view-post-btn {
+            background: var(--primary);
+            color: white;
+            text-decoration: none;
+            padding: 10px 16px;
+            border-radius: var(--radius-sm);
+            font-weight: 600;
+            font-size: 14px;
+            display: inline-block;
+            width: auto;
+            text-align: center;
+        }
+        .view-post-btn:hover { background: #2563eb; }
+
+        .job-description {
+            margin-top: 16px;
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .tech-stack-container {
+            margin-top: 16px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .tech-stack-badge {
+            font-size: 12px;
+            font-weight: 500;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: #DBEAFE;
+            color: var(--primary);
+        }
+
+        .tag-react { background: #DBEAFE; color: var(--primary); }
+        .tag-nodejs { background: #DBEAFE; color: var(--primary); }
+        .tag-typescript { background: #DBEAFE; color: var(--primary); }
+        .tag-javascript { background: #DBEAFE; color: var(--primary); }
+        .tag-python { background: #DBEAFE; color: var(--primary); }
+        .tag-java { background: #DBEAFE; color: var(--primary); }
+        .tag-go { background: #DBEAFE; color: var(--primary); }
+        .tag-rust { background: #DBEAFE; color: var(--primary); }
+        .tag-aws { background: #DBEAFE; color: var(--primary); }
+
+        .job-footer {
+            margin-top: 16px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .divider {
+            color: #cbd5e1;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 48px 16px;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .empty-icon {
+            font-size: 32px;
+            margin-bottom: 12px;
+        }
+
+        .empty-state button {
+            margin-top: 16px;
+            width: auto;
+        }
+
+        @media (min-width: 1024px) {
+            .app {
+                display: grid;
+                grid-template-columns: minmax(240px, 25%) 1fr;
+                gap: 24px;
+                align-items: start;
+            }
+
+            .sidebar {
+                position: sticky;
+                top: calc(var(--header-height) + 16px);
+                align-self: start;
+            }
+
+            .job-header {
+                flex-direction: row;
+                align-items: center;
+                justify-content: space-between;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-header {
+                position: sticky;
+                top: 0;
+            }
+
+            .filters-list {
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                padding-bottom: 8px;
+            }
+
+            .sidebar {
+                position: sticky;
+                top: 72px;
+                z-index: 10;
+            }
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.35); }
+            70% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="auth-section" class="auth-card">
+            <h1 id="auth-title">Login</h1>
+            <div id="error-msg" class="error hidden"></div>
+            <input type="text" id="username" placeholder="Username">
+            <input type="password" id="password" placeholder="Password">
+            <button id="auth-btn" onclick="handleAuth()">Login</button>
+            <p class="auth-toggle">
+                <a href="#" onclick="toggleAuthMode()" id="auth-toggle">Need an account? Register</a>
+            </p>
+        </div>
+
+        <div id="dashboard-section" class="hidden">
+            <div class="dashboard-header" id="dashboard-header">
+                <div class="dashboard-title">Job Alert Dashboard</div>
+                <div class="profile">
+                    <span class="profile-avatar" id="profile-avatar">JD</span>
+                    <span id="profile-name">Profile</span>
+                    <button class="profile-logout" onclick="logout()">Logout</button>
+                </div>
+            </div>
+            <div class="app">
+                <aside class="sidebar">
+                    <div class="sidebar-header">
+                        <h2>My Filters</h2>
+                        <button class="edit-toggle" onclick="toggleEditMode()">Edit</button>
+                    </div>
+                    <div id="filters-list" class="filters-list">Loading...</div>
+
+                    <button class="add-filter-btn" onclick="toggleCreateForm()">+ Add New Filter</button>
+                    <div id="create-filter-form" class="hidden">
+                        <h3>New Filter Details</h3>
+                        <input type="text" id="filter-name" placeholder="Filter Name (e.g., Remote React)">
+                        <input type="text" id="filter-url" placeholder="LinkedIn Search URL">
+                        <div class="form-actions">
+                            <button onclick="createFilter()" class="primary-action">Save Filter</button>
+                            <button onclick="toggleCreateForm()" class="secondary secondary-action">Cancel</button>
+                        </div>
+                    </div>
+                </aside>
+
+                <main class="main">
+                    <div class="feed-header">
+                        <div>
+                            <h2>Job Feed</h2>
+                            <div id="feed-title-suffix" class="feed-title-suffix"></div>
+                        </div>
+                        <div class="feed-actions">
+                            <button id="run-filter-btn" class="secondary run-filter-btn hidden" onclick="runCurrentFilter()">
+                                <span class="run-icon">▶</span>
+                                <span class="run-text">Run Filter</span>
+                            </button>
+                            <div id="connection-status" class="connection-status">Connecting...</div>
+                        </div>
+                    </div>
+
+                    <div id="live-feed" class="feed-container">
+                        <div id="feed-placeholder" class="empty-state">Connecting to feed...</div>
+                    </div>
+
+                </main>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let isLogin = true;
+        let currentEventSource = null;
+        const api = '/api';
+
+        function getToken() {
+            return localStorage.getItem('token');
+        }
+
+        function toggleAuthMode() {
+            isLogin = !isLogin;
+            document.getElementById('auth-title').textContent = isLogin ? 'Login' : 'Register';
+            document.getElementById('auth-btn').textContent = isLogin ? 'Login' : 'Register';
+            document.getElementById('auth-toggle').textContent = isLogin ? 'Need an account? Register' : 'Have an account? Login';
+            document.getElementById('error-msg').classList.add('hidden');
+        }
+
+        async function handleAuth() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const endpoint = isLogin ? '/auth/login' : '/auth/register';
+
+            try {
+                const res = await fetch(`${api}${endpoint}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await res.json();
+                
+                if (!res.ok) throw new Error(data.error || 'Auth failed');
+
+                if (isLogin) {
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    showDashboard();
+                } else {
+                    alert('Registration successful! Please login.');
+                    toggleAuthMode();
+                }
+            } catch (err) {
+                const errDiv = document.getElementById('error-msg');
+                errDiv.textContent = err.message;
+                errDiv.classList.remove('hidden');
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            location.reload();
+        }
+
+        async function showDashboard() {
+            document.getElementById('auth-section').classList.add('hidden');
+            document.getElementById('dashboard-section').classList.remove('hidden');
+            await loadFilters();
+            updateFeedTitle();
+            updateProfile();
+            initScrollBehavior();
+            connectSSE();
+        }
+
+        let currentFilterId = null;
+        let editMode = false;
+        let filtersCache = [];
+        let isRunningFilter = false;
+        let scrollInitialized = false;
+
+        function toggleCreateForm() {
+            const form = document.getElementById('create-filter-form');
+            const btn = document.querySelector('.add-filter-btn');
+            const isHidden = form.classList.contains('hidden');
+            
+            if (isHidden) {
+                form.classList.remove('hidden');
+                btn.classList.add('hidden');
+            } else {
+                form.classList.add('hidden');
+                btn.classList.remove('hidden');
+            }
+        }
+
+        async function loadFilters() {
+            const token = getToken();
+            const res = await fetch(`${api}/filters`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const filters = await res.json();
+            filtersCache = filters;
+            
+            const list = document.getElementById('filters-list');
+            list.innerHTML = '';
+            list.classList.toggle('edit-mode', editMode);
+
+            const allChip = document.createElement('div');
+            allChip.className = `filter-chip ${!currentFilterId ? 'active' : ''}`;
+            allChip.onclick = () => viewFilterFeed(null);
+            allChip.innerHTML = `<span>All Jobs</span>`;
+            list.appendChild(allChip);
+            
+            filters.forEach(f => {
+                const chip = document.createElement('div');
+                chip.className = `filter-chip ${currentFilterId === f.id ? 'active' : ''}`;
+                chip.onclick = () => viewFilterFeed(f.id);
+                chip.innerHTML = `
+                    <span>${f.name}</span>
+                    <button class="chip-delete" onclick="event.stopPropagation(); deleteFilter('${f.id}')">×</button>
+                `;
+                list.appendChild(chip);
+            });
+            updateFeedTitle();
+        }
+
+        async function loadPosts() {
+            const token = getToken();
+            const list = document.getElementById('posts-list');
+            
+            try {
+                const res = await fetch(`${api}/posts`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const posts = await res.json();
+                
+            list.innerHTML = posts.length ? '' : '<p>No saved job offers yet.</p>';
+                
+                posts.forEach(job => {
+                    const el = createJobElement(job);
+                    list.appendChild(el);
+                });
+            } catch (err) {
+                list.innerHTML = '<p>Error loading jobs.</p>';
+            }
+        }
+
+        function getTechClass(tech) {
+            const name = tech.toLowerCase();
+            if (name.includes('react')) return 'tag-react';
+            if (name.includes('node')) return 'tag-nodejs';
+            if (name.includes('typescript')) return 'tag-typescript';
+            if (name.includes('javascript')) return 'tag-javascript';
+            if (name.includes('python')) return 'tag-python';
+            if (name.includes('java')) return 'tag-java';
+            if (name.includes('golang') || name === 'go') return 'tag-go';
+            if (name.includes('rust')) return 'tag-rust';
+            if (name.includes('aws')) return 'tag-aws';
+            return '';
+        }
+
+        function createJobElement(job) {
+            const el = document.createElement('div');
+            el.className = 'job-card';
+            
+            const techStackHtml = job.techStack && job.techStack.length > 0 
+                ? `<div class="tech-stack-container">
+                    ${job.techStack.map(tech => `<span class="tech-stack-badge ${getTechClass(tech)}">${tech}</span>`).join('')}
+                   </div>`
+                : '';
+
+            const descriptionHtml = job.description 
+                ? `<div class="job-description">${job.description}</div>`
+                : '';
+
+            el.innerHTML = `
+                <div class="job-header">
+                    <div class="job-info">
+                        <div class="job-company">${job.company || 'Unknown Company'}</div>
+                        <div class="job-title-row">
+                            ${job.title || 'Job Offer'}
+                            ${job.mainStack ? `<span class="main-stack-badge">${job.mainStack}</span>` : ''}
+                        </div>
+                    </div>
+                    <a href="${job.url}" target="_blank" class="view-post-btn">View Post</a>
+                </div>
+                ${descriptionHtml}
+                ${techStackHtml}
+                <div class="job-footer">
+                    <span>📍 ${job.location || 'Remote/N/A'}</span>
+                    <span class="divider">•</span>
+                    <span>📅 ${new Date(job.createdAt || Date.now()).toLocaleDateString()}</span>
+                </div>
+            `;
+            return el;
+        }
+
+        async function createFilter() {
+            const name = document.getElementById('filter-name').value;
+            const searchUrl = document.getElementById('filter-url').value;
+            
+            if (!name || !searchUrl) return alert('Name and URL required');
+
+            const token = getToken();
+            const res = await fetch(`${api}/filters`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    name,
+                    config: { searchUrl }
+                })
+            });
+
+            if (res.ok) {
+                document.getElementById('filter-name').value = '';
+                document.getElementById('filter-url').value = '';
+                toggleCreateForm();
+                loadFilters();
+            } else {
+                alert('Failed to create filter');
+            }
+        }
+
+        async function deleteFilter(id) {
+            if (!confirm('Are you sure?')) return;
+            const token = getToken();
+            await fetch(`${api}/filters/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            loadFilters();
+        }
+
+        async function runCollection(url, filterId) {
+            viewFilterFeed(filterId);
+
+            const token = getToken();
+            console.log('Starting collection...');
+            fetch(`${api}/collect`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ url, filterId })
+            })
+            .then(async (res) => {
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    throw new Error(data.error || 'Failed to start collection');
+                }
+                return data;
+            })
+            .then(() => {
+                console.log('Collection request sent successfully');
+            })
+            .catch(err => {
+                if (err.message && err.message.includes('already running')) {
+                    setRunButtonState(true);
+                } else {
+                    setRunButtonState(false);
+                }
+                alert('Error: ' + err.message);
+            });
+        }
+
+        function toggleEditMode() {
+            editMode = !editMode;
+            const btn = document.querySelector('.edit-toggle');
+            btn.textContent = editMode ? 'Done' : 'Edit';
+            loadFilters();
+        }
+
+        function viewFilterFeed(filterId) {
+            currentFilterId = filterId;
+            updateFeedTitle();
+            loadFilters();
+            connectSSE(filterId);
+        }
+
+        function updateFeedTitle() {
+            const suffixEl = document.getElementById('feed-title-suffix');
+            const runBtn = document.getElementById('run-filter-btn');
+            if (!currentFilterId) {
+                suffixEl.textContent = 'All Jobs';
+                runBtn.classList.add('hidden');
+                return;
+            }
+            const match = filtersCache.find(f => f.id === currentFilterId);
+            suffixEl.textContent = match ? `Filter: ${match.name}` : 'Filtered';
+            const runText = runBtn.querySelector('.run-text');
+            runText.textContent = match ? `Run ${match.name}` : 'Run Filter';
+            runBtn.classList.remove('hidden');
+            if (isRunningFilter) {
+                runText.textContent = 'Running';
+                runBtn.classList.add('is-running');
+                runBtn.disabled = true;
+            } else {
+                runBtn.classList.remove('is-running');
+                runBtn.disabled = false;
+            }
+        }
+
+        function runCurrentFilter() {
+            const match = filtersCache.find(f => f.id === currentFilterId);
+            if (!match) return;
+            setRunButtonState(true);
+            runCollection(match.config.searchUrl, match.id);
+        }
+
+        function setRunButtonState(isRunning) {
+            const runBtn = document.getElementById('run-filter-btn');
+            isRunningFilter = isRunning;
+            if (!runBtn || runBtn.classList.contains('hidden')) return;
+            runBtn.classList.toggle('is-running', isRunning);
+            runBtn.disabled = isRunning;
+            const runText = runBtn.querySelector('.run-text');
+            if (runText) {
+                if (isRunning) {
+                    runText.textContent = 'Running';
+                } else {
+                    updateFeedTitle();
+                }
+            }
+        }
+
+        function updateProfile() {
+            const profileNameEl = document.getElementById('profile-name');
+            const avatarEl = document.getElementById('profile-avatar');
+            const rawUser = localStorage.getItem('user');
+            const username = rawUser ? JSON.parse(rawUser).username : 'Profile';
+            profileNameEl.textContent = username;
+            const initials = username
+                .split(/\s+/)
+                .filter(Boolean)
+                .slice(0, 2)
+                .map(part => part[0].toUpperCase())
+                .join('');
+            avatarEl.textContent = initials || 'U';
+        }
+
+        function initScrollBehavior() {
+            if (scrollInitialized) return;
+            scrollInitialized = true;
+            let lastScrollY = window.scrollY;
+            const sidebar = document.querySelector('.sidebar');
+            window.addEventListener('scroll', () => {
+                if (!sidebar || window.innerWidth > 768) return;
+                const currentY = window.scrollY;
+                const shouldHide = currentY > lastScrollY && currentY > 24;
+                sidebar.classList.toggle('sidebar-hidden', shouldHide);
+                lastScrollY = currentY;
+            }, { passive: true });
+        }
+
+        function renderEmptyState(message, showClear) {
+            return `
+                <div id="feed-placeholder" class="empty-state">
+                    <div class="empty-icon">🔍</div>
+                    <div>${message}</div>
+                    ${showClear ? '<button class="secondary" onclick="viewFilterFeed(null)">Clear Filters</button>' : ''}
+                </div>
+            `;
+        }
+
+        function connectSSE(filterId) {
+            if (currentEventSource) {
+                currentEventSource.close();
+            }
+            const token = getToken();
+            const statusEl = document.getElementById('connection-status');
+            const feed = document.getElementById('live-feed');
+            statusEl.textContent = 'Connecting...';
+            statusEl.classList.remove('connected');
+            statusEl.classList.remove('disconnected');
+            
+            feed.innerHTML = `
+                <div id="feed-placeholder" class="empty-state">
+                    <div class="empty-icon">⏳</div>
+                    <div>Connecting to feed...</div>
+                </div>
+            `;
+            
+            let url = `/api/subscribe?token=${token}`;
+            if (filterId) {
+                url += `&filterId=${filterId}`;
+            }
+            
+            const evtSource = new EventSource(url);
+            currentEventSource = evtSource;
+            
+            evtSource.onopen = () => {
+                statusEl.textContent = 'Connected';
+                statusEl.classList.remove('disconnected');
+                statusEl.classList.add('connected');
+            };
+
+            evtSource.addEventListener('ready', (event) => {
+                if (isRunningFilter) setRunButtonState(false);
+                const hasJobs = feed.querySelector('.job-card');
+                if (hasJobs) return;
+                const message = filterId ? 'No jobs found for this filter.' : 'No jobs collected yet.';
+                feed.innerHTML = renderEmptyState(message, Boolean(filterId));
+            });
+
+            evtSource.addEventListener('status', (event) => {
+                const status = JSON.parse(event.data);
+                setRunButtonState(Boolean(status.running));
+                if (status.running) {
+                    statusEl.textContent = 'Running';
+                    statusEl.classList.add('running');
+                } else {
+                    statusEl.textContent = 'Connected';
+                    statusEl.classList.remove('running');
+                }
+            });
+            
+            evtSource.addEventListener('job', (event) => {
+                if (isRunningFilter) setRunButtonState(false);
+                const job = JSON.parse(event.data);
+                
+                const existingPost = feed.querySelector(`a[href="${job.url}"]`);
+                if (existingPost) return;
+
+                const placeholder = document.getElementById('feed-placeholder');
+                if (placeholder) {
+                    placeholder.remove();
+                }
+
+                const jobEl = createJobElement(job);
+                
+                if (!job.createdAt || (Date.now() - new Date(job.createdAt).getTime() < 60000)) {
+                    jobEl.classList.add('new-item');
+                }
+
+                feed.prepend(jobEl);
+            });
+            
+            evtSource.onerror = (err) => {
+                if (isRunningFilter) setRunButtonState(false);
+                statusEl.textContent = 'Reconnecting...';
+                statusEl.classList.remove('connected');
+                statusEl.classList.add('disconnected');
+            };
+        }
+
+        if (getToken()) {
+            showDashboard();
+        }
+    </script>
+</body>
+</html>
