@@ -19,6 +19,12 @@ const port = Number(process.env.PORT) || 3000;
 // Configuration
 const cookie = process.env.LINKEDIN_SESSION_COOKIE || '';
 const openaiKey = process.env.OPENAI_API_KEY || '';
+
+if (process.env.NODE_ENV === 'production') {
+  if (!cookie) console.warn('⚠️ WARNING: LINKEDIN_SESSION_COOKIE is missing in production environment');
+  if (!openaiKey) console.warn('⚠️ WARNING: OPENAI_API_KEY is missing in production environment');
+}
+
 const openaiBaseUrl = process.env.OPENAI_BASE_URL || 'https://openrouter.ai/api/v1';
 const jwtSecret = process.env.JWT_SECRET || 'your-secret-key-change-me';
 // The URL provided by the user (default)
@@ -52,6 +58,9 @@ app.get('/', (c) => c.redirect('/dashboard'));
 
 app.get('/dashboard', async (c) => {
   return c.html(await Bun.file('src/dashboard.html').text());
+});
+app.get('/test', async (c) => {
+  return c.html(await Bun.file('index.html').text());
 });
 
 // Auth Routes
@@ -110,10 +119,14 @@ app.use('/api/collect', jwt({ secret: jwtSecret, alg: 'HS256' }));
 
 app.post('/api/collect', async (c) => {
   if (!cookie) {
-    return c.json({ error: 'Missing LINKEDIN_SESSION_COOKIE in .env' }, 500);
+    return c.json({ 
+      error: 'Missing LINKEDIN_SESSION_COOKIE. Please ensure it is set in your production environment variables (e.g., in your hosting provider dashboard).' 
+    }, 500);
   }
   if (!openaiKey) {
-    return c.json({ error: 'Missing OPENAI_API_KEY in .env' }, 500);
+    return c.json({ 
+      error: 'Missing OPENAI_API_KEY. Please ensure it is set in your production environment variables.' 
+    }, 500);
   }
   
   const lockAcquired = await jobRunLock.acquire(collectLockKey, collectLockTtlMs);
