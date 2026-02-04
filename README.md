@@ -31,6 +31,7 @@ A modular tool designed to automate the discovery and analysis of job opportunit
   ```
 - **Production Mode**:
   ```bash
+  bun build src/index.ts --outdir ./dist --target node
   bun start
   ```
 

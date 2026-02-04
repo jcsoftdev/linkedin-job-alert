@@ -41,7 +41,7 @@
         h2 { font-size: 18px; font-weight: 600; }
         h3 { font-size: 18px; font-weight: 600; }
 
-        input, button {
+        input {
             padding: 12px 16px;
             border-radius: var(--radius-md);
             border: 1px solid var(--border);
@@ -49,20 +49,56 @@
             font-size: 14px;
             font-family: inherit;
             background: var(--surface);
+            margin-bottom: 12px;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+        }
+
+        button:focus-visible,
+        .filter-chip:focus-visible,
+        .view-post-btn:focus-visible {
+            outline: 2px solid var(--primary);
+            outline-offset: 2px;
         }
 
         button {
+            padding: 12px 16px;
+            border-radius: var(--radius-sm);
+            border: none;
+            width: 100%;
+            font-size: 14px;
+            font-family: inherit;
             background: var(--primary);
             color: white;
-            border: none;
             cursor: pointer;
             font-weight: 600;
-            transition: transform 0.15s, background 0.2s;
-            border-radius: var(--radius-sm);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        button:hover { background: #2563eb; }
-        button:active { transform: translateY(1px); }
-        button.secondary { background: #e5e7eb; color: #111827; }
+
+        button:hover {
+            background: #2563eb;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button.secondary {
+            background: #e5e7eb;
+            color: #111827;
+        }
+
+        button.secondary:hover {
+            background: #d1d5db;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
 
         .hidden { display: none; }
         .error { color: #dc2626; margin: 8px 0; font-size: 14px; }
@@ -135,10 +171,19 @@
             border: none;
             font-size: 12px;
             font-weight: 600;
-            padding: 6px 8px;
+            padding: 8px 12px;
+            border-radius: var(--radius-sm);
             width: auto;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .profile-logout:hover { background: rgba(239, 68, 68, 0.1); }
+        .profile-logout:hover {
+            background: rgba(239, 68, 68, 0.1);
+            transform: translateY(-1px);
+        }
+        .profile-logout:focus-visible {
+            outline: 2px solid #ef4444;
+            outline-offset: 2px;
+        }
 
         .app {
             display: flex;
@@ -176,10 +221,27 @@
             background: #F3F4F6;
             color: #4B5563;
             font-weight: 600;
-            padding: 8px 12px;
+            padding: 8px 16px;
             border-radius: 999px;
             width: auto;
             font-size: 12px;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .edit-toggle.active {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+        }
+
+        .edit-toggle:hover {
+            background: #E5E7EB;
+            transform: translateY(-1px);
+        }
+
+        .edit-toggle.active:hover {
+            background: #2563eb;
+            box-shadow: 0 6px 16px rgba(37, 99, 235, 0.3);
         }
 
         .filters-list {
@@ -204,18 +266,30 @@
             gap: 6px;
             border-radius: 999px;
             background: #F3F4F6;
-            padding: 8px 12px;
+            padding: 8px 16px;
             font-size: 12px;
             font-weight: 500;
             color: #4B5563;
             cursor: pointer;
-            transition: background 0.2s, color 0.2s;
+            transition: all 0.2s ease;
             white-space: nowrap;
+            border: 1px solid transparent;
+        }
+
+        .filter-chip:hover {
+            background: #E5E7EB;
+            color: var(--text-primary);
+            transform: translateY(-1px);
         }
 
         .filter-chip.active {
             background: var(--primary);
             color: white;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+        }
+
+        .filter-chip.active:hover {
+            background: #2563eb;
         }
 
         .filter-chip .chip-delete {
@@ -233,11 +307,24 @@
 
         .add-filter-btn {
             margin-top: 16px;
-            background: transparent;
+            background: rgba(59, 130, 246, 0.05);
             border: 1px dashed var(--primary);
             color: var(--primary);
             font-weight: 600;
             border-radius: var(--radius-sm);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .add-filter-btn:hover {
+            background: var(--primary);
+            border-style: solid;
+            color: white;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
+        }
+
+        .add-filter-btn:active {
+            transform: translateY(0);
         }
 
         #create-filter-form {
@@ -280,8 +367,13 @@
             align-items: center;
             gap: 6px;
             font-weight: 600;
+            transition: all 0.2s ease;
         }
-        .run-filter-btn:hover { background: rgba(16, 185, 129, 0.08); }
+        .run-filter-btn:hover {
+            background: rgba(16, 185, 129, 0.08);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
         .run-filter-btn:disabled {
             opacity: 0.6;
             cursor: not-allowed;
@@ -348,14 +440,27 @@
         .job-card {
             background: var(--surface);
             border-radius: var(--radius-lg);
-            padding: 20px;
+            padding: 24px;
             box-shadow: var(--shadow);
-            margin-bottom: 16px;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+
+        .job-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
+            border-color: var(--border);
         }
 
         .job-card.new-item {
             border: 2px solid var(--primary);
             background: #eff6ff;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+        }
+
+        .job-card.new-item:hover {
+            box-shadow: 0 12px 24px rgba(59, 130, 246, 0.15);
         }
 
         .job-header {
@@ -386,8 +491,13 @@
             display: inline-block;
             width: auto;
             text-align: center;
+            transition: all 0.2s ease;
         }
-        .view-post-btn:hover { background: #2563eb; }
+        .view-post-btn:hover {
+            background: #2563eb;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
 
         .job-description {
             margin-top: 16px;
@@ -832,6 +942,7 @@
             editMode = !editMode;
             const btn = document.querySelector('.edit-toggle');
             btn.textContent = editMode ? 'Done' : 'Edit';
+            btn.classList.toggle('active', editMode);
             loadFilters();
         }
 
