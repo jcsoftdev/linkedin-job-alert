@@ -5,7 +5,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "bun build src/index.ts --outdir ./dist --target node",
-    "start": "NODE_ENV=production bun src/index.ts",
+    "start": "bun src/index.ts",
     "dev": "bun --watch src/index.ts",
     "dev:debug": "bun --watch --inspect src/index.ts",
     "check": "tsc --noEmit"

@@ -1,7 +1,15 @@
 import { Database } from 'bun:sqlite';
 import path from 'node:path';
+import fs from 'node:fs';
 
-const dbPath = process.env.DATABASE_PATH || path.resolve(process.cwd(), 'posts.db');
+const dbPath = Bun.env.DATABASE_PATH || process.env.DATABASE_PATH || path.resolve(process.cwd(), 'posts.db');
+
+// Ensure the directory exists (useful for Railway volumes)
+const dbDir = path.dirname(dbPath);
+if (!fs.existsSync(dbDir)) {
+  fs.mkdirSync(dbDir, { recursive: true });
+}
+
 const db = new Database(dbPath);
 
 // Initialize tables

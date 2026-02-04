@@ -13,20 +13,27 @@ import { AuthService } from './modules/auth/application/AuthService';
 import { FilterManagement } from './modules/auth/application/FilterManagement';
 
 const app = new Hono();
-const port = Number(process.env.PORT) || 3000;
+const port = Number(Bun.env.PORT || process.env.PORT) || 3000;
 
+console.log('Environment check:', {
+  PORT: !!(Bun.env.PORT || process.env.PORT),
+  LINKEDIN_SESSION_COOKIE: !!(Bun.env.LINKEDIN_SESSION_COOKIE || process.env.LINKEDIN_SESSION_COOKIE),
+  OPENAI_API_KEY: !!(Bun.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY),
+  DATABASE_PATH: !!(Bun.env.DATABASE_PATH || process.env.DATABASE_PATH),
+  NODE_ENV: Bun.env.NODE_ENV || process.env.NODE_ENV
+});
 
 // Configuration
-const cookie = process.env.LINKEDIN_SESSION_COOKIE || '';
-const openaiKey = process.env.OPENAI_API_KEY || '';
+const cookie = Bun.env.LINKEDIN_SESSION_COOKIE || process.env.LINKEDIN_SESSION_COOKIE || '';
+const openaiKey = Bun.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY || '';
 
-if (process.env.NODE_ENV === 'production') {
+if (Bun.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'production') {
   if (!cookie) console.warn('⚠️ WARNING: LINKEDIN_SESSION_COOKIE is missing in production environment');
   if (!openaiKey) console.warn('⚠️ WARNING: OPENAI_API_KEY is missing in production environment');
 }
 
-const openaiBaseUrl = process.env.OPENAI_BASE_URL || 'https://openrouter.ai/api/v1';
-const jwtSecret = process.env.JWT_SECRET || 'your-secret-key-change-me';
+const openaiBaseUrl = Bun.env.OPENAI_BASE_URL || process.env.OPENAI_BASE_URL || 'https://openrouter.ai/api/v1';
+const jwtSecret = Bun.env.JWT_SECRET || process.env.JWT_SECRET || 'your-secret-key-change-me';
 // The URL provided by the user (default)
 const defaultSearchUrl = 'https://www.linkedin.com/search/results/content/?keywords=frontend%20developer%20latam&origin=FACETED_SEARCH&position=0&sid=USX&sortBy=%22date_posted%22';
 
