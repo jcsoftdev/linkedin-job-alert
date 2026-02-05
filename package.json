@@ -4,16 +4,17 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "bun build src/index.ts --outdir ./dist --target node",
+    "build": "cd client && bun run build",
     "start": "bun src/index.ts",
     "dev": "bun --watch src/index.ts",
+    "dev:client": "cd client && bun run dev",
     "dev:debug": "bun --watch --inspect src/index.ts",
     "check": "tsc --noEmit"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
+  "description": "LinkedIn Alert Hub collects, filters, and streams relevant LinkedIn job posts so you can act on the best opportunities faster.",
   "dependencies": {
     "hono": "^4.11.7",
     "node-cron": "^4.2.1",

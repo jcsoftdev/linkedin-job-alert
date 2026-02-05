@@ -1,4 +1,9 @@
 .env
-/node_modules
-/.trae
+node_modules
+.trae
 posts.db
+dist
+client/node_modules
+client/dist
+client/.vite
+.DS_Store

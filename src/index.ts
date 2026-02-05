@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { serveStatic } from 'hono/bun';
 import { jwt, verify } from 'hono/jwt';
 import cron from 'node-cron';
 import { PuppeteerScraper } from './modules/job-collection/infrastructure/PuppeteerScraper';
@@ -61,16 +62,14 @@ const authService = new AuthService(userRepository, jwtSecret);
 const filterManagement = new FilterManagement(userRepository);
 
 // Routes
-app.get('/', (c) => c.redirect('/dashboard'));
-
-app.get('/dashboard', async (c) => {
-  return c.html(await Bun.file('src/dashboard.html').text());
-});
-app.get('/test', async (c) => {
-  return c.html(await Bun.file('index.html').text());
-});
+// Old UI routes removed in favor of React client
+// app.get('/', (c) => c.redirect('/dashboard'));
+// app.get('/dashboard', ...);
+// app.get('/test', ...);
 
 // Auth Routes
+app.get('/api/health', (c) => c.json({ status: 'ok', message: 'Backend is reachable' }));
+
 app.post('/api/auth/register', async (c) => {
   const { username, password } = await c.req.json();
   if (!username || !password) return c.json({ error: 'Username and password required' }, 400);
@@ -229,68 +228,14 @@ app.get('/api/subscribe', async (c) => {
   });
 });
 
-app.get('/demo', (c) => {
-  return c.html(`
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <title>Live Job Alerts</title>
-      <style>
-        body { font-family: system-ui, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
-        .card { border: 1px solid #ddd; padding: 15px; margin-bottom: 10px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .new { background-color: #e6fffa; border-color: #38b2ac; animation: highlight 2s; }
-        @keyframes highlight { from { background-color: #38b2ac; } to { background-color: #e6fffa; } }
-        button { padding: 10px 20px; cursor: pointer; background: #0077b5; color: white; border: none; border-radius: 4px; }
-        #status { margin-top: 10px; color: #666; font-size: 0.9em; }
-      </style>
-    </head>
-    <body>
-      <h1>Live Job Alerts</h1>
-      <div style="margin-bottom: 20px;">
-        <button onclick="triggerCollection()">Trigger Collection</button>
-        <div id="status">Waiting for updates...</div>
-      </div>
-      <div id="jobs"></div>
+// Demo route removed
+// app.get('/demo', ...);
 
-      <script>
-        const jobsDiv = document.getElementById('jobs');
-        const statusDiv = document.getElementById('status');
-        
-        // Connect to SSE
-        const evtSource = new EventSource('/api/subscribe');
-        
-        evtSource.onopen = () => {
-          statusDiv.textContent = 'Connected to live updates.';
-        };
+// Serve Static Files (Frontend)
+app.use('/*', serveStatic({ root: './client/dist' }));
 
-        evtSource.addEventListener('job', (event) => {
-          const job = JSON.parse(event.data);
-          const el = document.createElement('div');
-          el.className = 'card new';
-          el.innerHTML = \`
-            <h3>\${job.company}</h3>
-            <p>\${job.content.substring(0, 150)}...</p>
-            <small>Found at: \${new Date().toLocaleTimeString()}</small>
-          \`;
-          jobsDiv.prepend(el);
-        });
-
-        evtSource.onerror = (err) => {
-          console.error('EventSource failed:', err);
-          statusDiv.textContent = 'Connection lost. Reconnecting...';
-        };
-
-        function triggerCollection() {
-          fetch('/api/collect', { method: 'POST' })
-            .then(res => res.json())
-            .then(data => alert('Collection started! Watch for updates below.'))
-            .catch(err => alert('Error starting collection'));
-        }
-      </script>
-    </body>
-    </html>
-  `);
-});
+// SPA Fallback: Serve index.html for any other route
+app.get('*', serveStatic({ path: './client/dist/index.html' }));
 
 // Scheduler: Run every day at 9:00 AM
 cron.schedule('0 9 * * *', async () => {
