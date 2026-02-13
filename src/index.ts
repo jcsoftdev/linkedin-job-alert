@@ -13,6 +13,8 @@ import { SqliteUserRepository } from './modules/auth/infrastructure/SqliteUserRe
 import { AuthService } from './modules/auth/application/AuthService';
 import { FilterManagement } from './modules/auth/application/FilterManagement';
 import { ConfigRepository } from './modules/auth/infrastructure/ConfigRepository';
+import { SqliteSubscriptionRepository } from './modules/notifications/infrastructure/SqliteSubscriptionRepository';
+import { NotificationService } from './modules/notifications/application/NotificationService';
 import db from './shared/infrastructure/db';
 
 const app = new Hono();
@@ -23,12 +25,15 @@ console.log('Environment check:', {
   LINKEDIN_SESSION_COOKIE: !!(Bun.env.LINKEDIN_SESSION_COOKIE || process.env.LINKEDIN_SESSION_COOKIE),
   OPENAI_API_KEY: !!(Bun.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY),
   DATABASE_PATH: !!(Bun.env.DATABASE_PATH || process.env.DATABASE_PATH),
-  NODE_ENV: Bun.env.NODE_ENV || process.env.NODE_ENV
+  NODE_ENV: Bun.env.NODE_ENV || process.env.NODE_ENV,
+  VAPID_KEYS: !!(Bun.env.VAPID_PUBLIC_KEY || process.env.VAPID_PUBLIC_KEY)
 });
 
 // Configuration
 const cookie = Bun.env.LINKEDIN_SESSION_COOKIE || process.env.LINKEDIN_SESSION_COOKIE || '';
 const openaiKey = Bun.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY || '';
+const vapidPublicKey = Bun.env.VAPID_PUBLIC_KEY || process.env.VAPID_PUBLIC_KEY || '';
+const vapidPrivateKey = Bun.env.VAPID_PRIVATE_KEY || process.env.VAPID_PRIVATE_KEY || '';
 
 if (Bun.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'production') {
   if (!cookie) console.warn('⚠️ WARNING: LINKEDIN_SESSION_COOKIE is missing in production environment');
@@ -46,11 +51,15 @@ const cookieProvider = {
   getCookie: async () => configRepo.get('LINKEDIN_SESSION_COOKIE')
 };
 
+// Notification Dependencies
+const subscriptionRepo = new SqliteSubscriptionRepository();
+const notificationService = new NotificationService(subscriptionRepo, vapidPublicKey, vapidPrivateKey);
+
 // Dependency Injection
 const scraper = new PuppeteerScraper(cookie, cookieProvider);
 const analyzer = new OpenAIJobAnalyzer(openaiKey, openaiBaseUrl);
 const repository = new SqlitePostRepository();
-const pubsub = new JobOfferPubSub();
+const pubsub = new JobOfferPubSub(notificationService);
 const jobRunLock = new SqliteJobRunLock();
 
 const collectLockKey = 'collection:global';
@@ -77,6 +86,17 @@ const filterManagement = new FilterManagement(userRepository);
 
 // Auth Routes
 app.get('/api/health', (c) => c.json({ status: 'ok', message: 'Backend is reachable' }));
+
+app.post('/api/notifications/subscribe', async (c) => {
+  try {
+    const subscription = await c.req.json();
+    await notificationService.subscribe(subscription);
+    return c.json({ success: true });
+  } catch (e: any) {
+    console.error('Subscription error:', e);
+    return c.json({ error: e.message }, 500);
+  }
+});
 
 // Config routes (protected)
 app.use('/api/config/*', jwt({ secret: jwtSecret, alg: 'HS256' }));

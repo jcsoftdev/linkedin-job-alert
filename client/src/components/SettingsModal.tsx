@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { api } from '../lib/api';
-import { X, Save, AlertTriangle } from 'lucide-react';
+import { X, Save, AlertTriangle, Bell, BellOff } from 'lucide-react';
+import { usePushNotifications } from '../hooks/usePushNotifications';
 
 interface SettingsModalProps {
   readonly isOpen: boolean;
@@ -11,6 +12,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [cookie, setCookie] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+  const { isSupported, isSubscribed, subscribe, unsubscribe } = usePushNotifications();
 
   if (!isOpen) return null;
 
@@ -87,7 +89,47 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             )}
           </div>
 
-          <div className="mt-6 flex justify-end gap-3">
+          {/* Push Notifications Section */}
+          <div className="mt-6 pt-6 border-t border-gray-100">
+            <h3 className="text-sm font-semibold text-gray-900 mb-4 uppercase tracking-wider">Notifications</h3>
+            
+            {!isSupported ? (
+              <p className="text-sm text-gray-500 bg-gray-50 p-3 rounded-lg">
+                Push notifications are not supported in this browser.
+              </p>
+            ) : (
+              <div className="flex items-center justify-between bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 rounded-full ${isSubscribed ? 'bg-blue-100' : 'bg-gray-200'}`}>
+                    {isSubscribed ? <Bell className="h-5 w-5 text-blue-600" /> : <BellOff className="h-5 w-5 text-gray-500" />}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">
+                      {isSubscribed ? 'Push Notifications Active' : 'Push Notifications Inactive'}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {isSubscribed 
+                        ? 'You will be notified about new job matches.' 
+                        : 'Enable to receive alerts on your device.'}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={isSubscribed ? unsubscribe : subscribe}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+                    isSubscribed 
+                      ? 'bg-white text-red-600 border border-gray-200 hover:bg-red-50 hover:border-red-200 shadow-sm' 
+                      : 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm'
+                  }`}
+                >
+                  {isSubscribed ? 'Disable' : 'Enable'}
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className="mt-8 flex justify-end gap-3 pt-4 border-t border-gray-100">
             <button
               type="button"
               onClick={onClose}

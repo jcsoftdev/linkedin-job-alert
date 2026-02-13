@@ -1,5 +1,6 @@
 import type { JobOfferPublisher } from '../domain/JobOfferPublisher';
 import type { JobPost } from '../domain/JobPost';
+import type { NotificationService } from '../../notifications/application/NotificationService';
 
 export class JobOfferPubSub implements JobOfferPublisher {
   // Map of userId -> Set of subscription IDs
@@ -10,7 +11,7 @@ export class JobOfferPubSub implements JobOfferPublisher {
   private heartbeatInterval?: Timer;
   private isRunning = false;
 
-  constructor() {
+  constructor(private readonly notificationService?: NotificationService) {
     this.startHeartbeat();
   }
 
@@ -28,11 +29,26 @@ export class JobOfferPubSub implements JobOfferPublisher {
     }, 30000); // 30 seconds
   }
 
-  publish(post: JobPost, userId?: string) {
+  async publish(post: JobPost, userId?: string) {
     console.log(`PubSub: Publishing post to user=${userId || 'anon'}`);
-    if (!userId) return;
+    
+    // Send SSE event
+    if (userId) {
+        this.publishEvent(userId, 'job', post);
+    }
 
-    this.publishEvent(userId, 'job', post);
+    // Send Push Notification
+    if (this.notificationService) {
+        const payload = {
+            title: `New Job: ${post.title}`,
+            body: `${post.company} - ${post.location}`,
+            url: post.url,
+            icon: '/vite.svg'
+        };
+        // Broadcast to all for now as we don't have user-bound push subs fully enforced yet
+        // or if we do, we should filter. For now, broadcast.
+        await this.notificationService.sendNotificationToAll(payload);
+    }
   }
 
   publishStatus(userId: string, status: { running: boolean }) {
