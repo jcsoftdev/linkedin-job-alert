@@ -33,8 +33,8 @@ export class PuppeteerScraper implements PostScraper {
       console.log(`Scraped ${results.length} posts.`);
       return results;
 
-    } catch (error: any) {
-      if (error.message.includes('ERR_TOO_MANY_REDIRECTS')) {
+    } catch (error: unknown) {
+      if (error instanceof Error && error.message.includes('ERR_TOO_MANY_REDIRECTS')) {
         console.error('LinkedIn redirected too many times. This usually means your session cookie (li_at) is invalid or expired.');
         throw new Error('Session cookie invalid/expired (ERR_TOO_MANY_REDIRECTS)');
       }
@@ -45,7 +45,7 @@ export class PuppeteerScraper implements PostScraper {
     }
   }
 
-  private async setupBrowserPermissions(browser: any, url: string) {
+  private async setupBrowserPermissions(browser: import('puppeteer').Browser, url: string) {
     const context = browser.defaultBrowserContext();
     const origin = new URL(url).origin;
     await context.overridePermissions(origin, ['clipboard-read', 'clipboard-write']);
@@ -55,7 +55,7 @@ export class PuppeteerScraper implements PostScraper {
     const dynamicCookie = this.cookieProvider ? await this.cookieProvider.getCookie() : null;
     const cookieToUse = dynamicCookie || this.initialCookie;
 
-    await page.browserContext().setCookie({
+    await page.setCookie({
       name: 'li_at',
       value: cookieToUse,
       domain: '.linkedin.com',
@@ -76,11 +76,12 @@ export class PuppeteerScraper implements PostScraper {
       if (currentUrl.includes('login') || currentUrl.includes('checkpoint')) {
         throw new Error('Redirected to login/checkpoint page. Your session cookie might be invalid or expired.');
       }
-    } catch (error: any) {
-      if (error.message.includes('Redirected to login')) {
-        throw error;
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      if (err.message.includes('Redirected to login')) {
+        throw err;
       }
-      console.warn('Warning: Could not load home page, proceeding to target URL anyway:', error.message);
+      console.warn('Warning: Could not load home page, proceeding to target URL anyway:', err.message);
     }
   }
 
@@ -114,7 +115,12 @@ export class PuppeteerScraper implements PostScraper {
                              el.querySelector('.feed-shared-actor__sub-description');
 
       const authorName = (titleElement as HTMLElement)?.innerText?.trim() || undefined;
-      const postedAt = (subDescription as HTMLElement)?.innerText?.trim() || undefined;
+      let postedAt = (subDescription as HTMLElement)?.innerText?.trim() || undefined;
+
+      // Clean up postedAt if it contains "•" or "·"
+      if (postedAt) {
+        postedAt = postedAt.split(/[•·]/)[0].trim();
+      }
 
       return {
         content: textElement?.textContent?.trim() || null,

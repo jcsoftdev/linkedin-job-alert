@@ -1,33 +1,41 @@
 import { ExternalLink, Calendar, MapPin } from 'lucide-react';
+import type { JobPost } from '../lib/types';
 
-export interface Job {
-  id?: string;
-  company: string;
-  title: string;
-  mainStack?: string;
-  url: string;
-  description?: string;
-  techStack?: string[];
-  location?: string;
-  createdAt: string;
-}
+const TECH_BADGE_COLORS: Record<string, string> = {
+  react: 'bg-blue-100 text-blue-700',
+  node: 'bg-green-100 text-green-700',
+  typescript: 'bg-blue-50 text-blue-600',
+  javascript: 'bg-yellow-100 text-yellow-700',
+  python: 'bg-yellow-50 text-yellow-600',
+  java: 'bg-red-100 text-red-700',
+  go: 'bg-cyan-100 text-cyan-700',
+  rust: 'bg-orange-100 text-orange-700',
+  aws: 'bg-orange-50 text-orange-600',
+};
 
 const getTechBadgeColor = (tech: string) => {
   const t = tech.toLowerCase();
-  if (t.includes('react')) return 'bg-blue-100 text-blue-700';
-  if (t.includes('node')) return 'bg-green-100 text-green-700';
-  if (t.includes('typescript')) return 'bg-blue-50 text-blue-600';
-  if (t.includes('javascript')) return 'bg-yellow-100 text-yellow-700';
-  if (t.includes('python')) return 'bg-yellow-50 text-yellow-600';
-  if (t.includes('java')) return 'bg-red-100 text-red-700';
-  if (t.includes('go') || t === 'go') return 'bg-cyan-100 text-cyan-700';
-  if (t.includes('rust')) return 'bg-orange-100 text-orange-700';
-  if (t.includes('aws')) return 'bg-orange-50 text-orange-600';
+  for (const [key, color] of Object.entries(TECH_BADGE_COLORS)) {
+    if (t.includes(key)) return color;
+  }
   return 'bg-gray-100 text-gray-700';
 };
 
-export function JobCard({ job }: { job: Job }) {
-  const isNew = new Date().getTime() - new Date(job.createdAt).getTime() < 60000;
+export function JobCard({ job }: { job: JobPost }) {
+  // Use scrapedAt as the primary date source (moment of scrapping)
+  const displayDate = new Date(job.scrapedAt);
+  const isValidDate = !isNaN(displayDate.getTime());
+  
+  const isNew = isValidDate && (new Date().getTime() - displayDate.getTime() < 60000 * 60); // New if < 1 hour
+
+  // Clean up postedAt string (e.g., "2h • Edited • ...")
+  const formatPostedAt = (text: string) => {
+    if (!text) return '';
+    // Take the first part before the first bullet point
+    return text.split(/[•·]/)[0].trim();
+  };
+
+  const cleanPostedAt = job.postedAt ? formatPostedAt(job.postedAt) : null;
 
   return (
     <div className={`group bg-white rounded-xl p-6 shadow-sm border transition-all hover:-translate-y-1 hover:shadow-md ${isNew ? 'border-blue-500 bg-blue-50/30' : 'border-gray-200 hover:border-gray-300'}`}>
@@ -80,7 +88,7 @@ export function JobCard({ job }: { job: Job }) {
         <span className="text-gray-300">•</span>
         <div className="flex items-center gap-1.5">
           <Calendar className="h-3.5 w-3.5" />
-          {new Date(job.createdAt).toLocaleDateString()}
+          {cleanPostedAt ? `Posted ${cleanPostedAt}` : (isValidDate ? displayDate.toLocaleDateString() : 'Date N/A')}
         </div>
       </div>
     </div>

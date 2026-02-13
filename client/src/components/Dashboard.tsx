@@ -2,11 +2,10 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Sidebar } from './Sidebar';
 import type { Filter } from './Sidebar';
 import { JobCard } from './JobCard';
-import type { Job } from './JobCard';
 import { SettingsModal } from './SettingsModal';
 import { api, getToken } from '../lib/api';
 import { Play, Loader2, LogOut, Settings, Search } from 'lucide-react';
-import type { User } from '../lib/types';
+import type { User, JobPost } from '../lib/types';
 
 interface DashboardProps {
   readonly user: User;
@@ -15,7 +14,7 @@ interface DashboardProps {
 
 export function Dashboard({ user, onLogout }: DashboardProps) {
   const [currentFilter, setCurrentFilter] = useState<Filter | null>(null);
-  const [jobs, setJobs] = useState<Job[]>([]);
+  const [jobs, setJobs] = useState<JobPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'running' | 'disconnected'>('connecting');
   const [isRunningFilter, setIsRunningFilter] = useState(false);
