@@ -12,6 +12,8 @@ import { GetJobOffers } from './modules/job-collection/application/GetJobOffers'
 import { SqliteUserRepository } from './modules/auth/infrastructure/SqliteUserRepository';
 import { AuthService } from './modules/auth/application/AuthService';
 import { FilterManagement } from './modules/auth/application/FilterManagement';
+import { ConfigRepository } from './modules/auth/infrastructure/ConfigRepository';
+import db from './shared/infrastructure/db';
 
 const app = new Hono();
 const port = Number(Bun.env.PORT || process.env.PORT) || 3000;
@@ -38,8 +40,14 @@ const jwtSecret = Bun.env.JWT_SECRET || process.env.JWT_SECRET || 'your-secret-k
 // The URL provided by the user (default)
 const defaultSearchUrl = 'https://www.linkedin.com/search/results/content/?keywords=frontend%20developer%20latam&origin=FACETED_SEARCH&position=0&sid=USX&sortBy=%22date_posted%22';
 
+// Config
+const configRepo = new ConfigRepository(db);
+const cookieProvider = {
+  getCookie: async () => configRepo.get('LINKEDIN_SESSION_COOKIE')
+};
+
 // Dependency Injection
-const scraper = new PuppeteerScraper(cookie);
+const scraper = new PuppeteerScraper(cookie, cookieProvider);
 const analyzer = new OpenAIJobAnalyzer(openaiKey, openaiBaseUrl);
 const repository = new SqlitePostRepository();
 const pubsub = new JobOfferPubSub();
@@ -69,6 +77,17 @@ const filterManagement = new FilterManagement(userRepository);
 
 // Auth Routes
 app.get('/api/health', (c) => c.json({ status: 'ok', message: 'Backend is reachable' }));
+
+// Config routes (protected)
+app.use('/api/config/*', jwt({ secret: jwtSecret, alg: 'HS256' }));
+
+app.post('/api/config/linkedin-cookie', async (c) => {
+  const { cookie } = await c.req.json();
+  if (!cookie) return c.json({ error: 'Cookie is required' }, 400);
+  
+  configRepo.set('LINKEDIN_SESSION_COOKIE', cookie);
+  return c.json({ success: true, message: 'LinkedIn cookie updated successfully' });
+});
 
 app.post('/api/auth/register', async (c) => {
   const { username, password } = await c.req.json();

@@ -1,8 +1,15 @@
 import puppeteer, { Page, ElementHandle } from 'puppeteer';
 import type { PostScraper, RawPost } from '../domain/PostScraper';
 
+export interface CookieProvider {
+  getCookie(): Promise<string | null>;
+}
+
 export class PuppeteerScraper implements PostScraper {
-  constructor(private readonly cookie: string) {}
+  constructor(
+    private readonly initialCookie: string,
+    private readonly cookieProvider?: CookieProvider
+  ) {}
 
   async scrape(url: string): Promise<RawPost[]> {
     console.log(`Starting scrape for ${url}`);
@@ -26,7 +33,11 @@ export class PuppeteerScraper implements PostScraper {
       console.log(`Scraped ${results.length} posts.`);
       return results;
 
-    } catch (error) {
+    } catch (error: any) {
+      if (error.message.includes('ERR_TOO_MANY_REDIRECTS')) {
+        console.error('LinkedIn redirected too many times. This usually means your session cookie (li_at) is invalid or expired.');
+        throw new Error('Session cookie invalid/expired (ERR_TOO_MANY_REDIRECTS)');
+      }
       console.error('Error during scraping:', error);
       return [];
     } finally {
@@ -41,19 +52,36 @@ export class PuppeteerScraper implements PostScraper {
   }
 
   private async setupPage(page: Page) {
+    const dynamicCookie = this.cookieProvider ? await this.cookieProvider.getCookie() : null;
+    const cookieToUse = dynamicCookie || this.initialCookie;
+
     await page.browserContext().setCookie({
       name: 'li_at',
-      value: this.cookie,
+      value: cookieToUse,
       domain: '.linkedin.com',
       path: '/',
       secure: true,
       httpOnly: true,
     });
 
-    await page.setUserAgent({
-      userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-    });
+    await page.setUserAgent(
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    );
     await page.setViewport({ width: 1280, height: 800 });
+
+    // First try to go to the home page to check if the cookie is valid
+    try {
+      await page.goto('https://www.linkedin.com/', { waitUntil: 'domcontentloaded', timeout: 30000 });
+      const currentUrl = page.url();
+      if (currentUrl.includes('login') || currentUrl.includes('checkpoint')) {
+        throw new Error('Redirected to login/checkpoint page. Your session cookie might be invalid or expired.');
+      }
+    } catch (error: any) {
+      if (error.message.includes('Redirected to login')) {
+        throw error;
+      }
+      console.warn('Warning: Could not load home page, proceeding to target URL anyway:', error.message);
+    }
   }
 
   private async extractPosts(page: Page, articles: ElementHandle[]): Promise<RawPost[]> {
@@ -118,14 +146,14 @@ export class PuppeteerScraper implements PostScraper {
 
   private async extractPostUrl(page: Page, article: ElementHandle): Promise<string> {
     // Attempt 1: Get from data-urn (most reliable)
-    const dataUrn = await article.evaluate(el => el.getAttribute('data-urn'));
+    const dataUrn = await article.evaluate(el => (el as HTMLElement).dataset.urn);
     if (dataUrn) {
       const id = dataUrn.split(':').pop();
       if (id) return `https://www.linkedin.com/feed/update/urn:li:activity:${id}`;
     }
 
     // Attempt 2: Get from data-id
-    const dataId = await article.evaluate(el => el.getAttribute('data-id'));
+    const dataId = await article.evaluate(el => (el as HTMLElement).dataset.id);
     if (dataId) {
       const id = dataId.split(':').pop();
       if (id) return `https://www.linkedin.com/feed/update/urn:li:activity:${id}`;
@@ -140,10 +168,10 @@ export class PuppeteerScraper implements PostScraper {
       
       // Preparamos una variable global en el navegador para capturar el link
       await page.evaluate(() => {
-        (window as any)._lastCopiedUrl = '';
+        (globalThis as any)._lastCopiedUrl = '';
         const originalWriteText = navigator.clipboard.writeText;
         navigator.clipboard.writeText = async (text) => {
-          (window as any)._lastCopiedUrl = text;
+          (globalThis as any)._lastCopiedUrl = text;
           return originalWriteText.call(navigator.clipboard, text);
         };
       });
@@ -163,7 +191,7 @@ export class PuppeteerScraper implements PostScraper {
         const timeout = 3000;
 
         while (Date.now() - startTime < timeout) {
-          postUrl = await page.evaluate(() => (window as any)._lastCopiedUrl);
+          postUrl = await page.evaluate(() => (globalThis as any)._lastCopiedUrl);
           if (postUrl && (postUrl.includes('linkedin.com/feed/update') || postUrl.includes('linkedin.com/posts'))) {
             break;
           }
@@ -196,6 +224,7 @@ export class PuppeteerScraper implements PostScraper {
           previousHeight
         );
       } catch (e) {
+        // Break on timeout if no more content loads
         break;
       }
 

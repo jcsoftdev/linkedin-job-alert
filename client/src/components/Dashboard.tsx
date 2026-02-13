@@ -1,15 +1,16 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Sidebar } from './Sidebar';
 import type { Filter } from './Sidebar';
 import { JobCard } from './JobCard';
 import type { Job } from './JobCard';
+import { SettingsModal } from './SettingsModal';
 import { api, getToken } from '../lib/api';
-import { Play, Loader2, LogOut, Search } from 'lucide-react';
+import { Play, Loader2, LogOut, Settings, Search } from 'lucide-react';
 import type { User } from '../lib/types';
 
 interface DashboardProps {
-  user: User;
-  onLogout: () => void;
+  readonly user: User;
+  readonly onLogout: () => void;
 }
 
 export function Dashboard({ user, onLogout }: DashboardProps) {
@@ -18,10 +19,11 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
   const [loading, setLoading] = useState(true);
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'running' | 'disconnected'>('connecting');
   const [isRunningFilter, setIsRunningFilter] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const eventSourceRef = useRef<EventSource | null>(null);
 
   // Load initial jobs (history)
-  const loadHistory = async () => {
+  const loadHistory = useCallback(async () => {
     try {
       setLoading(true);
       const query = currentFilter ? `?filterId=${currentFilter.id}` : '';
@@ -32,10 +34,10 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentFilter]);
 
   // SSE Connection
-  const connectSSE = () => {
+  const connectSSE = useCallback(() => {
     if (eventSourceRef.current) {
       eventSourceRef.current.close();
     }
@@ -64,7 +66,7 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
     es.addEventListener('job', (event) => {
       const job = JSON.parse(event.data);
       setJobs(prev => {
-        if (prev.find(j => j.url === job.url)) return prev;
+        if (prev.some(j => j.url === job.url)) return prev;
         return [job, ...prev];
       });
     });
@@ -72,7 +74,7 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
     es.onerror = () => {
       setConnectionStatus('disconnected');
     };
-  };
+  }, [currentFilter]);
 
   useEffect(() => {
     loadHistory();
@@ -83,7 +85,7 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
         eventSourceRef.current.close();
       }
     };
-  }, [currentFilter]);
+  }, [loadHistory, connectSSE]);
 
   const handleRunCollection = async () => {
     if (!currentFilter) return;
@@ -110,6 +112,30 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
       .toUpperCase();
   };
 
+  const getConnectionStatusUI = () => {
+    if (connectionStatus === 'running') {
+      return {
+        bg: 'bg-green-100 text-green-700',
+        dot: 'bg-green-500 animate-pulse',
+        text: 'Running Collection'
+      };
+    }
+    if (connectionStatus === 'connected') {
+      return {
+        bg: 'bg-blue-50 text-blue-600',
+        dot: 'bg-blue-500',
+        text: 'Live Connected'
+      };
+    }
+    return {
+      bg: 'bg-red-50 text-red-600',
+      dot: 'bg-red-500',
+      text: 'Disconnected'
+    };
+  };
+
+  const statusUI = getConnectionStatusUI();
+
   return (
     <div className="min-h-screen bg-gray-50 pb-12">
       {/* Header */}
@@ -125,6 +151,17 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
             </div>
             <span className="text-sm font-medium text-gray-700">{user.username}</span>
           </div>
+          
+          <button
+            onClick={() => setIsSettingsOpen(true)}
+            className="p-2 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors flex items-center gap-2"
+            title="Settings"
+            aria-label="Settings"
+          >
+          
+            <Settings className="h-5 w-5" />
+          </button>
+
           <button
             onClick={onLogout}
             className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
@@ -134,6 +171,8 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
           </button>
         </div>
       </header>
+
+      <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
@@ -159,19 +198,9 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
                 </div>
 
                 <div className="flex items-center gap-3">
-                  <div className={`text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1.5 ${
-                    connectionStatus === 'running' ? 'bg-green-100 text-green-700' :
-                    connectionStatus === 'connected' ? 'bg-blue-50 text-blue-600' :
-                    'bg-red-50 text-red-600'
-                  }`}>
-                    <span className={`h-2 w-2 rounded-full ${
-                      connectionStatus === 'running' ? 'bg-green-500 animate-pulse' :
-                      connectionStatus === 'connected' ? 'bg-blue-500' :
-                      'bg-red-500'
-                    }`} />
-                    {connectionStatus === 'running' ? 'Running Collection' : 
-                     connectionStatus === 'connected' ? 'Live Connected' : 
-                     'Disconnected'}
+                  <div className={`text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1.5 ${statusUI.bg}`}>
+                    <span className={`h-2 w-2 rounded-full ${statusUI.dot}`} />
+                    {statusUI.text}
                   </div>
 
                   {currentFilter && (
